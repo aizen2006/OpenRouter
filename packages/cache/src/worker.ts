@@ -4,14 +4,14 @@ import { sendEmail } from "./email/email"
 const connection = createNodeRedisClient(redis);
 
 export const signUpEmailworker = new Worker(
-    'Email',
+    'Emails',
     async job => {
         const { to , subject , html } = job.data;
         try {
             await sendEmail(to,subject,html);
             
         } catch (error) {
-            
+            throw new Error("Error while Processing the email job",{cause:error});
         }
     },
     { 
