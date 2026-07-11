@@ -97,4 +97,6 @@ app.post('/forgot-password',async(req:Request,res:Response)=>{
 
 });
 
-app.post('/reset-password')
+app.post('/reset-password',async(req:Request,res:Response)=>{
+
+});

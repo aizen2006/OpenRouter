@@ -1,12 +1,21 @@
 {
-  "name": "cache",
+  "name": "@repo/redis",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": "./src/redis"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "bullmq": "^5.80.2",
+    "dotenv": "^17.4.2",
+    "redis": "^6.1.0",
+    "resend": "^6.17.2"
   }
 }
