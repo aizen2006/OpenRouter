@@ -1,6 +1,6 @@
 import { Worker, createNodeRedisClient } from 'bullmq';
 import { redis } from "./redis"
-import { sendEmail } from "./email/email"
+import { sendEmail } from "./email"
 const connection = createNodeRedisClient(redis);
 
 export const signUpEmailworker = new Worker(

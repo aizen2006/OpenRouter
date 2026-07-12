@@ -1,17 +1,22 @@
-import jwt from "jsonwebtoken"
+import jwt, { type Jwt } from "jsonwebtoken"
 import 'dotenv/config';
 
 const secret = process.env.JWT_SECRET ?? "Please Add the jwt secret"
 
+export interface JwtPayload {
+    id: string;
+    email: string;
+}
+
 // Create jwt token
 
-export function createToken(id:string):string{
-    if(!id){
-        throw new Error("Please enter a valid email")
+export function createToken(id:string,email:string):string{
+    if(!id || !email){
+        throw new Error("Please enter a valid input")
     }
     try {
         const token = jwt.sign(
-            { id },
+            { id ,email},
             secret!,
             {
                 expiresIn: "10h"
@@ -19,21 +24,21 @@ export function createToken(id:string):string{
         );
         return token;
     } catch (error) {
-        throw new Error("Error while generating the token")
+        throw new Error("Error while generating the token",{cause:error})
     }
 
 }
 
-// Return the Email's
+// Returns  { userid , email}
 
-export function verifyToken(token:string):string{
+export function verifyToken(token:string):JwtPayload {
     if(!token){
-        throw new Error("Please enter a valid email")
+        throw new Error("Please enter a valid token")
     }
     try {
-        const result = jwt.verify(token,secret!) as string;
+        const result = jwt.verify(token,secret!) as JwtPayload ;
         return result
     } catch (error) {
-        throw new Error("Error while verifing the token")
+        throw new Error("Error while verifing the token",{cause:error})
     }
 }
