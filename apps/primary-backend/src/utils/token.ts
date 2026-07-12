@@ -1,4 +1,5 @@
-import jwt, { type Jwt } from "jsonwebtoken"
+import jwt, { type Jwt } from "jsonwebtoken";
+import crypto from 'crypto';
 import 'dotenv/config';
 
 const secret = process.env.JWT_SECRET ?? "Please Add the jwt secret"
@@ -41,4 +42,11 @@ export function verifyToken(token:string):JwtPayload {
     } catch (error) {
         throw new Error("Error while verifing the token",{cause:error})
     }
+}
+
+export const hashToken = (token:string) => {
+    return crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
 }

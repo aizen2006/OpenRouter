@@ -1,20 +1,13 @@
 import { Router, type Request, type Response } from "express"; 
 import { eq }  from "drizzle-orm";
 import { db ,usersTable } from "@repo/db";
-import { createToken } from "../utils/token";
-import { hash, verify } from "../utils/bcrypt";
+import { createToken , hashToken } from "../utils/token";
+import { hash, verify  } from "../utils/bcrypt";
 import { sendEmailJob , redis } from "@repo/redis";
 import { verifyEmailTemplate , forgotPasswordTemplate} from "../utils/emailTemplate";
 import crypto from 'crypto';
 import { limiter } from "../middleware/ratelimit.middleware";
 
-
-const hashToken = (token:string) => {
-    return crypto
-        .createHash("sha256")
-        .update(token)
-        .digest("hex");
-}
 
 const app = Router();
 
