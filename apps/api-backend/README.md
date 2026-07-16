@@ -2,14 +2,14 @@
 
 User Request
 │
-├── Authentication Middleware
+├── Authentication Middleware(Done)
 │     ├── Validate API Key
 │     ├── Redis Cache (10 min TTL)
 │     └── Cache Hit/Miss
 │
-├── Rate Limiter
+├── Rate Limiter(Done)
 │
-├── Credit Validation
+├── Credit Validation( will add later )
 │
 ├── Provider Selection
 │     ├── Get providers supporting the requested model
