@@ -2,6 +2,7 @@ import express from 'express';
 import cors from "cors"
 import { app as auth } from './routes/auth.routes';
 import { app as apikeys } from './routes/apikeys.routes';
+import { app as models } from './routes/models.routes';
 
 const PORT = process.env.PORT ?? 3000;
 
@@ -14,6 +15,7 @@ app.use(express.json());
 // routers
 app.use('/auth',auth)
 app.use('/apikeys',apikeys)
+app.use('/models',models)
 
 
 

@@ -5,6 +5,7 @@ import { limiter } from '../middleware/ratelimit.middleware';
 import { hashToken } from '../utils/token';
 import { apikeysTable , db } from '@repo/db';
 import { eq ,and ,isNull} from 'drizzle-orm';
+import { redis } from '@repo/redis';
 
 
 const app = Router();
@@ -194,6 +195,10 @@ app.delete('/:id',async(req:Request,res:Response)=>{
         if(!key) return res.status(404).json({
             message:"ApiKey not found"
         });
+
+        // the api-backend caches key lookups under apiKey:{key_hash} — evict it
+        // so the revocation takes effect immediately instead of after the TTL
+        await redis.del(`apiKey:${key.key_hash}`);
 
         return res.sendStatus(204);
     } catch (error) {

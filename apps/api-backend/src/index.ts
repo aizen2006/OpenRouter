@@ -16,10 +16,9 @@ app.use(express.json());
 app.use('/chat',chat);
 
 // Catch all Middleware
-app.use((req, res) => {
+app.use((_, res) => {
     res.status(404).json({ 
-        error: "Not Found", 
-        path: req.originalUrl 
+        error: "Not Found"
     });
 });
 

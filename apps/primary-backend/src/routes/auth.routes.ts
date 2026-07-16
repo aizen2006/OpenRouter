@@ -61,6 +61,14 @@ app.post('/sign-up',limiter,async(req:Request,res:Response)=>{
             message:"User created successfully"
         })
     } catch (error) {
+        // two sign-ups racing past the select above — the unique constraint
+        // on users.email wins, surface it as the same 409
+        const pgCode = (error as any)?.code ?? (error as any)?.cause?.code;
+        if (pgCode === "23505") {
+            return res.status(409).json({
+                message: "Email already exists",
+            });
+        }
         console.error(error);
         return res.status(500).json({
             message: "Internal Server Error",
@@ -125,8 +133,10 @@ app.post('/forgot-password',limiter,async(req:Request,res:Response)=>{
     try {
         const [user] = await db.select().from(usersTable).where(eq(usersTable.email,email));
         if (!user) {
-            return res.status(404).json({
-                message: "If an account exists, we've sent a password reset email.",
+            // same status + message as the success path so the response
+            // doesn't reveal whether the account exists
+            return res.status(200).json({
+                message: "Password reset email sent.",
             });
         }
         const subject : string = ' Reset your password ';

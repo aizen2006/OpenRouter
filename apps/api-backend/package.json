@@ -11,6 +11,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "@repo/db": "workspace:*",
     "@repo/redis": "workspace:*",
     "crypto": "^1.0.1",

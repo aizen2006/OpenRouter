@@ -1,11 +1,27 @@
 import type { Request, Response , NextFunction} from "express";
 import { apikeysTable, db } from '@repo/db';
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { hashToken } from "../libs/hash";
 import { redis } from "@repo/redis";
 
 const API_KEY_CACHE_TTL = 600;
 const API_KEY_REGEX = /^sk_[A-Za-z0-9_-]{64}$/;
+
+// last_used_at is dashboard metadata — one DB write per key per minute is
+// plenty, so a short-lived NX marker in redis swallows the rest.
+function touchLastUsed(apiKeyId: string): void {
+    redis
+        .set(`apikey:touch:${apiKeyId}`, "1", { NX: true, EX: 60 })
+        .then((created) => {
+            if (created === null) return; // already touched this minute
+            return db
+                .update(apikeysTable)
+                .set({ last_used_at: new Date() })
+                .where(eq(apikeysTable.id, apiKeyId))
+                .then(() => undefined);
+        })
+        .catch((err) => console.error("[auth] failed to touch last_used_at:", err));
+}
 
 export async function auth(req:Request,res:Response,next:NextFunction){
     const apiKey = req.get("X-API-Key");
@@ -31,7 +47,10 @@ export async function auth(req:Request,res:Response,next:NextFunction){
             const [info] = await db
             .select({id:apikeysTable.id,userId:apikeysTable.userId})
             .from(apikeysTable)
-            .where(eq(apikeysTable.key_hash,hashedKey));
+            .where(and(
+                eq(apikeysTable.key_hash,hashedKey),
+                isNull(apikeysTable.revoked_at),
+            ));
     
     
             if(!info){
@@ -49,6 +68,7 @@ export async function auth(req:Request,res:Response,next:NextFunction){
                 apiKey:apiKey,
                 userId:info.userId
             }
+            touchLastUsed(info.id);
             return next();
         }else{
             // Cache hit
@@ -59,6 +79,7 @@ export async function auth(req:Request,res:Response,next:NextFunction){
                 apiKey:apiKey,
                 userId:key_details.userId
             }
+            touchLastUsed(key_details.apiKeyId);
             return next();
         }
     } catch (error) {
