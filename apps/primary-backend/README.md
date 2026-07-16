@@ -1,15 +1,4 @@
-# primary-backend
-
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.9. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+# Tasks Pending in Primary backend
+1. complete the model route's 
+2. add some default query param's for API's
+3. Add user's routes 

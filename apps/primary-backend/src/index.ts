@@ -2,7 +2,7 @@ import express from 'express';
 import cors from "cors"
 const PORT = process.env.PORT ?? 3000;
 import { app as auth } from './routes/auth.routes';
-// add global error handler( for route that don't exist)
+import { app as apikeys } from './routes/apikeys.routes';
 
 const app = express();
 
@@ -11,6 +11,9 @@ app.use(express.json());
 
 // routers
 app.use('/auth',auth)
+app.use('/apikeys',apikeys)
+
+
 
 // Catch all Middleware
 app.use((req, res) => {

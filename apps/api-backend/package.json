@@ -1,0 +1,20 @@
+{
+  "name": "api-backend",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "crypto": "^1.0.1",
+    "drizzle-orm": "^1.0.0-rc.4",
+    "express": "^5.2.1"
+  }
+}

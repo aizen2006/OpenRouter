@@ -1,4 +1,4 @@
-import jwt, { type Jwt } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import crypto from 'crypto';
 import 'dotenv/config';
 

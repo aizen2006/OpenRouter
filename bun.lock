@@ -10,6 +10,23 @@
         "typescript": "5.9.2",
       },
     },
+    "apps/api-backend": {
+      "name": "api-backend",
+      "dependencies": {
+        "@repo/db": "workspace:*",
+        "@repo/redis": "workspace:*",
+        "crypto": "^1.0.1",
+        "drizzle-orm": "^1.0.0-rc.4",
+        "express": "^5.2.1",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/express": "^5.0.6",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "apps/primary-backend": {
       "name": "primary-backend",
       "dependencies": {
@@ -406,6 +423,8 @@
     "ajv": ["ajv@6.15.0", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw=="],
 
     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
+
+    "api-backend": ["api-backend@workspace:apps/api-backend"],
 
     "argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 
