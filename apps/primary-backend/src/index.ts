@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from "cors"
-const PORT = process.env.PORT ?? 3000;
 import { app as auth } from './routes/auth.routes';
 import { app as apikeys } from './routes/apikeys.routes';
+
+const PORT = process.env.PORT ?? 3000;
+
 
 const app = express();
 
