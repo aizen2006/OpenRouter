@@ -17,6 +17,7 @@ const app = Router();
 app.use(limiter);
 app.use(auth);
 
+// Parser for pagination 
 function parsePagination(req: Request): { limit: number; offset: number } {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
@@ -57,7 +58,7 @@ app.patch("/me", async (req: Request, res: Response) => {
 
     try {
         const updates: { name?: string; password?: string } = {};
-
+        // Validation for name
         if (name) {
             if (typeof name !== "string" || name.trim().length === 0) {
                 return res.status(400).json({ message: "Enter a valid name" });
@@ -65,6 +66,8 @@ app.patch("/me", async (req: Request, res: Response) => {
             updates.name = name.trim();
         }
 
+        // Authentication for password
+        
         if (newPassword) {
             const [user] = await db
                 .select({ password: usersTable.password })
