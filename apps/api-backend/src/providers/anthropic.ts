@@ -20,7 +20,7 @@ function clientFor(target: ProviderTarget): Anthropic {
         client = new Anthropic({
             apiKey: apiKeyFor(target),
             ...(target.baseUrl && { baseURL: target.baseUrl }),
-            maxRetries: 0,
+            maxRetries: 0, // disabled retry
         });
         clients.set(key, client);
     }
@@ -81,6 +81,8 @@ function toProviderError(err: unknown, target: ProviderTarget): ProviderError {
     );
 }
 
+// For Non Streaming Chat
+
 async function chat(req: ChatRequest, target: ProviderTarget): Promise<ChatResult> {
     try {
         const response = await clientFor(target).messages.create(toAnthropicParams(req, target));
@@ -100,6 +102,8 @@ async function chat(req: ChatRequest, target: ProviderTarget): Promise<ChatResul
         throw toProviderError(err, target);
     }
 }
+
+// Use a generator Function for Streaming Chat
 
 async function* chatStream(req: ChatRequest, target: ProviderTarget): AsyncGenerator<StreamChunk> {
     const stream = clientFor(target).messages.stream(toAnthropicParams(req, target));

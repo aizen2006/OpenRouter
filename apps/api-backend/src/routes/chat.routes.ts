@@ -2,13 +2,14 @@ import express, { type Request, type Response } from "express";
 import type { Message, Options } from "../types/types";
 import { resolveProviders } from "../libs/ProviderRegistry";
 import { routeChat, routeChatStream } from "../libs/router";
-import { getCreditBalance, recordGeneration } from "../libs/usage";
+import { getCreditBalance, recordFailedGeneration, recordGeneration } from "../libs/usage";
 import { ProviderError, type ChatRequest, type StreamChunk, type Usage } from "../providers";
 
 const app = express();
 
 const VALID_ROLES = new Set(["system", "user", "assistant", "tool"]);
 
+// Validation helper
 function validationError(messages: unknown, model: unknown): string | null {
     if (typeof model !== "string" || !model) return "`model` is required";
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -30,21 +31,25 @@ app.post("/completions", async (req: Request, res: Response) => {
     const invalid = validationError(messages, model);
     if (invalid) return res.status(400).json({ error: invalid });
 
+    const startedAt = Date.now();
+
     try {
+        // Checks models continuity
         const targets = await resolveProviders(model);
         if (targets.length === 0) {
             return res.status(404).json({ error: `Model '${model}' not found or discontinued` });
         }
-
+        // Check's user's balances
         const balance = await getCreditBalance(req.apiKey!.userId);
         if (balance <= 0) {
             return res.status(402).json({ error: "Insufficient credits" });
         }
 
         const chatReq: ChatRequest = { messages, options };
-        const startedAt = Date.now();
+        
+        // Helper for Record's generation
 
-        const record = (usage: Usage, target: Parameters<typeof recordGeneration>[0]["target"]) =>
+        const record =(usage: Usage, target: Parameters<typeof recordGeneration>[0]["target"]) =>
             recordGeneration({
                 userId: req.apiKey!.userId,
                 apikeyId: req.apiKey!.id,
@@ -53,14 +58,17 @@ app.post("/completions", async (req: Request, res: Response) => {
                 latencyMs: Date.now() - startedAt,
             }).catch((err) => console.error("[usage] failed to record generation:", err));
 
+        // Check's if streaming true
         if (options.stream) {
             const { firstChunk, rest, target } = await routeChatStream(chatReq, targets);
 
+            // header's for SSE
             res.setHeader("Content-Type", "text/event-stream");
             res.setHeader("Cache-Control", "no-cache");
             res.setHeader("Connection", "keep-alive");
-            res.flushHeaders();
-
+            res.flushHeaders(); // send's the header's before stream arive's
+            
+            // Streaming helper function
             const writeChunk = (chunk: StreamChunk) => {
                 if (chunk.type === "delta") {
                     res.write(`data: ${JSON.stringify({ content: chunk.content })}\n\n`);
@@ -74,6 +82,7 @@ app.post("/completions", async (req: Request, res: Response) => {
                             finish_reason: chunk.finishReason,
                         })}\n\n`,
                     );
+                    // After stream's ended record's generations
                     record(chunk.usage, target);
                 }
             };
@@ -89,7 +98,7 @@ app.post("/completions", async (req: Request, res: Response) => {
             }
             return res.end();
         }
-
+        // For Non Streaming Call's 
         const { result, target } = await routeChat(chatReq, targets);
         record(result.usage, target);
 
@@ -106,6 +115,15 @@ app.post("/completions", async (req: Request, res: Response) => {
     } catch (err) {
         console.error("[chat] request failed:", err);
         if (err instanceof ProviderError) {
+            if (err.target) {
+                recordFailedGeneration({
+                    userId: req.apiKey!.userId,
+                    apikeyId: req.apiKey!.id,
+                    target: err.target,
+                    latencyMs: Date.now() - startedAt,
+                    errorMessage: err.message,
+                }).catch((e) => console.error("[usage] failed to record error generation:", e));
+            }
             // 4xx from the provider is the caller's problem (bad params, too long);
             // everything else means we couldn't serve the request.
             const status = !err.retryable && err.status >= 400 && err.status < 500 ? err.status : 502;

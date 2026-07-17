@@ -11,6 +11,8 @@ import {
 const REQUEST_TIMEOUT_MS = 120_000;
 const STREAM_TIMEOUT_MS = 300_000;
 
+// helper function
+
 function buildBody(req: ChatRequest, target: ProviderTarget, stream: boolean) {
     const { options } = req;
     return {
@@ -22,6 +24,8 @@ function buildBody(req: ChatRequest, target: ProviderTarget, stream: boolean) {
         ...(stream && { stream: true, stream_options: { include_usage: true } }),
     };
 }
+
+// POST Call Handler
 
 async function post(req: ChatRequest, target: ProviderTarget, stream: boolean): Promise<Response> {
     if (!target.baseUrl) {
@@ -61,6 +65,8 @@ async function post(req: ChatRequest, target: ProviderTarget, stream: boolean): 
     return res;
 }
 
+// For Non Streaming Chat's
+
 async function chat(req: ChatRequest, target: ProviderTarget): Promise<ChatResult> {
     const res = await post(req, target, false);
     const data = (await res.json()) as any;
@@ -77,6 +83,10 @@ async function chat(req: ChatRequest, target: ProviderTarget): Promise<ChatResul
         finishReason: choice.finish_reason ?? "stop",
     };
 }
+
+// For Streaming Chat's
+// Use a generator function
+
 
 async function* chatStream(req: ChatRequest, target: ProviderTarget): AsyncGenerator<StreamChunk> {
     const res = await post(req, target, true);

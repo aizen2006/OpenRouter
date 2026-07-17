@@ -1,7 +1,8 @@
 import { Queue ,type Job } from 'bullmq';
+import { bullConnection } from './connection';
 
 
-const myQueue = new Queue('Emails');
+const myQueue = new Queue('Emails', { connection: bullConnection });
 
 export async function sendEmailJob(userId:string,to:string , subject:string,html:string){
     let job:Job;

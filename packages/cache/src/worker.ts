@@ -1,7 +1,6 @@
-import { Worker, createNodeRedisClient } from 'bullmq';
-import { redis } from "./redis"
+import { Worker } from 'bullmq';
+import { bullConnection } from "./connection";
 import { sendEmail } from "./email"
-const connection = createNodeRedisClient(redis);
 
 export const signUpEmailworker = new Worker(
     'Emails',
@@ -9,13 +8,13 @@ export const signUpEmailworker = new Worker(
         const { to , subject , html } = job.data;
         try {
             await sendEmail(to,subject,html);
-            
+
         } catch (error) {
             throw new Error("Error while Processing the email job",{cause:error});
         }
     },
-    { 
-        connection ,
+    {
+        connection: bullConnection,
         concurrency:50,
     },
 );

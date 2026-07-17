@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "worker": "bun run src/run-worker.ts",
+    "dev": "bun run src/run-worker.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -15,6 +19,7 @@
   "dependencies": {
     "bullmq": "^5.80.2",
     "dotenv": "^17.4.2",
+    "ioredis": "5.10.1",
     "redis": "^6.1.0",
     "resend": "^6.17.2"
   }

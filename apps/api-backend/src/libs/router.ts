@@ -33,8 +33,12 @@ export interface RoutedChat {
     target: ProviderTarget; // whoever actually served it — needed for pricing/logging
 }
 
+// Main Chat router ( non streaming )
+
 export async function routeChat(req: ChatRequest, targets: ProviderTarget[]): Promise<RoutedChat> {
     let lastError: unknown;
+
+    let lastTarget: ProviderTarget | undefined;
 
     for (const target of targets) {
         if (await isCoolingDown(target.providerId)) continue;
@@ -42,16 +46,28 @@ export async function routeChat(req: ChatRequest, targets: ProviderTarget[]): Pr
             const result = await adapterFor(target).chat(req, target);
             return { result, target };
         } catch (err) {
-            if (!shouldFailover(err)) throw err; // the request itself is bad — no provider will fix it
+            if (!shouldFailover(err)) {
+                // the request itself is bad — no provider will fix it
+                if (err instanceof ProviderError) err.target = target;
+                throw err;
+            }
             await markFailure(target.providerId);
             console.error(`[router] ${target.providerSlug} failed:`, err);
             lastError = err;
+            lastTarget = target;
         }
     }
 
-    throw lastError instanceof ProviderError
-        ? new ProviderError(`All providers failed: ${lastError.message}`, 502, false)
-        : new ProviderError("No provider available for this model", 502, false);
+    throw exhausted(lastError, lastTarget);
+}
+
+function exhausted(lastError: unknown, lastTarget: ProviderTarget | undefined): ProviderError {
+    const err =
+        lastError instanceof ProviderError
+            ? new ProviderError(`All providers failed: ${lastError.message}`, 502, false)
+            : new ProviderError("No provider available for this model", 502, false);
+    err.target = lastTarget;
+    return err;
 }
 
 export interface RoutedStream {
@@ -64,11 +80,14 @@ export interface RoutedStream {
 // client, so we pull the first chunk here (inside the failover loop) and hand
 // the caller that chunk plus the live iterator. After this returns, an
 // upstream failure means terminating the stream, not retrying.
+
+// Main Chat Router For Streaming
 export async function routeChatStream(
     req: ChatRequest,
     targets: ProviderTarget[],
 ): Promise<RoutedStream> {
     let lastError: unknown;
+    let lastTarget: ProviderTarget | undefined;
 
     for (const target of targets) {
         if (await isCoolingDown(target.providerId)) continue;
@@ -78,14 +97,16 @@ export async function routeChatStream(
             if (first.done) throw new ProviderError(`${target.providerSlug}: empty stream`, 502, true);
             return { firstChunk: first.value, rest: stream, target };
         } catch (err) {
-            if (!shouldFailover(err)) throw err;
+            if (!shouldFailover(err)) {
+                if (err instanceof ProviderError) err.target = target;
+                throw err;
+            }
             await markFailure(target.providerId);
             console.error(`[router] ${target.providerSlug} stream failed:`, err);
             lastError = err;
+            lastTarget = target;
         }
     }
 
-    throw lastError instanceof ProviderError
-        ? new ProviderError(`All providers failed: ${lastError.message}`, 502, false)
-        : new ProviderError("No provider available for this model", 502, false);
+    throw exhausted(lastError, lastTarget);
 }

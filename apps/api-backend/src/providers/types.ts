@@ -34,6 +34,10 @@ export type StreamChunk =
     | { type: "done"; usage: Usage; finishReason: string };
 
 export class ProviderError extends Error {
+    // set by the router: the target that produced this error, for attribution
+    // in the generations log
+    public target?: ProviderTarget;
+
     constructor(
         message: string,
         public status: number,

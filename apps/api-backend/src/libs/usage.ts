@@ -25,6 +25,22 @@ interface RecordGenerationInput {
     latencyMs: number;
 }
 
+// Failed requests are logged for observability but never billed — we don't
+// know the upstream token usage, so tokens/cost stay zero.
+export async function recordFailedGeneration(
+    input: Omit<RecordGenerationInput, "usage"> & { errorMessage: string },
+): Promise<void> {
+    await db.insert(generationsTable).values({
+        userId: input.userId,
+        apikeyId: input.apikeyId,
+        modelId: input.target.modelId,
+        providerId: input.target.providerId,
+        status: "error",
+        latency_ms: input.latencyMs,
+        error_message: input.errorMessage.slice(0, 1000),
+    });
+}
+
 // Writes the generation row, debits credits, and logs the ledger entry in one
 // transaction. Called fire-and-forget after the response is sent — the user
 // shouldn't wait on billing writes.

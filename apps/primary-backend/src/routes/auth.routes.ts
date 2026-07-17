@@ -126,6 +126,39 @@ app.post('/sign-in',limiter,async(req:Request,res:Response)=>{
 });
 
 
+app.post('/resend-verification',limiter,async(req:Request,res:Response)=>{
+    const { email } = req.body;
+    if(!email) return res.status(400).json({message:"Please send a valid Email"});
+    try {
+        const [user] = await db.select().from(usersTable).where(eq(usersTable.email,email));
+
+        // neutral response whether the account exists, is verified, or not —
+        // don't leak account state
+        const response = { message: "If the account needs verification, an email has been sent." };
+
+        if(!user || user.emailVerified){
+            return res.status(200).json(response);
+        }
+
+        const token = crypto.randomBytes(32).toString('base64url');
+        const tokenHash = hashToken(token);
+
+        await redis.setEx(`verify:${tokenHash}`,15*60,user.id);
+
+        const verifyUrl: string = `https://openrouter.soubhikhalder.com/verify-email?token=${token}`
+        const html = verifyEmailTemplate({ name: user.name, verifyUrl });
+
+        await sendEmailJob(user.id,email,' Verify your Email ',html);
+
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
+});
+
 app.post('/forgot-password',limiter,async(req:Request,res:Response)=>{
     // Validation
     const { email } = req.body;
