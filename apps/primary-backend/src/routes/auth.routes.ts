@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express"; 
 import { eq }  from "drizzle-orm";
-import { db ,usersTable } from "@repo/db";
+import { creditTransactionsTable, db ,usersTable } from "@repo/db";
 import { createToken , hashToken } from "../utils/token";
 import { hash, verify  } from "../utils/bcrypt";
 import { sendEmailJob , redis } from "@repo/redis";
@@ -33,10 +33,25 @@ app.post('/sign-up',limiter,async(req:Request,res:Response)=>{
         }
         const hash_password = await hash(password);
 
-        const [user] = await db
-        .insert(usersTable)
-        .values({name:name,email:email,password:hash_password})
-        .returning();
+        // create the user and the ledger entry for their free signup credits
+        // together — the balance itself comes from the DB default (10), the
+        // bonus row makes it auditable in /users/me/transactions
+        const user = await db.transaction(async (tx) => {
+            const [created] = await tx
+                .insert(usersTable)
+                .values({name:name,email:email,password:hash_password})
+                .returning();
+
+            if (created) {
+                await tx.insert(creditTransactionsTable).values({
+                    userId: created.id,
+                    type: "bonus",
+                    amount: created.creditBalance,        // "10.000000"
+                    balance_after: created.creditBalance,
+                });
+            }
+            return created;
+        });
 
         if(!user) return res.status(500).json({
             message: "Failed to add the user",
